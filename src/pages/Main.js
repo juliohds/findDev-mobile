@@ -5,12 +5,17 @@ import { StyleSheet, Image, View, Text, TouchableOpacity, TextInput } from 'reac
 import { requestPermissionsAsync, getCurrentPositionAsync } from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import api from './../services/api';
+import { connect, disconnect, subscribeToNewDevs } from './../services/socket';
 
 export default function Main({ navigation }) {
 
   const [devs, setDevs] = useState([]);
   const [techs, setTechs] = useState('');
   const [currentRegion, setCurrentRegion] = useState(null);
+
+  useEffect(() => {
+    subscribeToNewDevs(dev => setDevs([...devs, dev]))
+  }, [devs]);
 
   useEffect(() => {
     async function loadInitialLocation() {
@@ -44,10 +49,14 @@ export default function Main({ navigation }) {
         techs
       }
     });
-
-    console.log("dev", response.data)
-
     setDevs(response.data.devs);
+    setupWebsocket();
+  }
+
+  function setupWebsocket(){
+    disconnect();
+    const { latitude, longitude } = currentRegion;
+    connect(latitude, longitude, techs);
   }
 
   function handleRegionChanged(region){
